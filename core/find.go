@@ -4,7 +4,7 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
-func Paging(page uint, pageSize uint, option *options.FindOptions) {
+func Paging(page uint64, pageSize uint64, option *options.FindOptions) {
 	if page != 0 {
 		if pageSize > 50 {
 			pageSize = 50
