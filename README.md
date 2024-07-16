@@ -22,3 +22,7 @@ func main() {
 	instance := mongo.Install(logger, &mongo.ConfigEntity{})
 }
 ```
+
+### Finally
+- If you feel good, click on star.
+- If you have a good suggestion, please ask the issue.
