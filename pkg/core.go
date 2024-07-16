@@ -1,11 +1,10 @@
-package core
+package mongo
 
 import (
 	"context"
 	"crypto/tls"
 	"crypto/x509"
 	"fmt"
-	"github.com/lhdhtrc/mongo-go/model"
 	"go.mongodb.org/mongo-driver/event"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
@@ -15,8 +14,8 @@ import (
 	"time"
 )
 
-func Setup(logger *zap.Logger, config *model.ConfigEntity) *mongo.Database {
-	logPrefix := "setup mongo"
+func Install(logger *zap.Logger, config *ConfigEntity) *mongo.Database {
+	logPrefix := "install mongo"
 	logger.Info(fmt.Sprintf("%s %s", logPrefix, "start ->"))
 
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
