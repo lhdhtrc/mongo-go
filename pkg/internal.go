@@ -1,8 +1,6 @@
-package core
+package mongo
 
-import (
-	"go.mongodb.org/mongo-driver/bson/primitive"
-)
+import "go.mongodb.org/mongo-driver/bson/primitive"
 
 func StrIdToObjectId(ids []string) []primitive.ObjectID {
 	var result []primitive.ObjectID
