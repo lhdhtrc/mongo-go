@@ -29,9 +29,6 @@ type ConfigEntity struct {
 	LoggerEnable bool `json:"logger_enable" bson:"logger_enable" yaml:"logger_enable" mapstructure:"logger_enable"`
 }
 
-type CoreEntity struct {
-}
-
 type TableEntity struct {
 	ID        primitive.ObjectID `json:"id" bson:"_id"`
 	CreatedAt time.Time          `json:"created_at" bson:"created_at"`
