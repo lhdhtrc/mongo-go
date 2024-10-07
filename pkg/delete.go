@@ -4,19 +4,8 @@ import (
 	"context"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
-	"go.mongodb.org/mongo-driver/mongo/options"
 	"time"
 )
-
-func Paging(page uint64, pageSize uint64, option *options.FindOptions) {
-	if page != 0 {
-		if pageSize > 50 {
-			pageSize = 50
-		}
-		option.SetLimit(int64(pageSize))
-		option.SetSkip(int64((page - 1) * pageSize))
-	}
-}
 
 func Delete(ctx context.Context, collection *mongo.Collection, id string) {
 	_, _ = collection.DeleteOne(ctx, bson.E{
