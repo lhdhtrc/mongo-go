@@ -16,9 +16,3 @@ func (table *TableEntity) BeforeInset() {
 func (table *TableEntity) BeforeUpdate() {
 	table.UpdatedAt = time.Now().UTC()
 }
-
-func (table *TableEntity) BeforeDelete() {
-	timer := time.Now().UTC()
-	table.UpdatedAt = timer
-	table.DeletedAt = &timer
-}
