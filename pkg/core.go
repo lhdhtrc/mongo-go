@@ -68,13 +68,18 @@ func Install(logger *zap.Logger, config *ConfigEntity) *mongo.Database {
 	if config.LoggerEnable {
 		clientOptions.Monitor = &event.CommandMonitor{
 			Started: func(ctx context.Context, event *event.CommandStartedEvent) {
-				logger.Info(fmt.Sprintf("[MongoDB][RequestID:%d][database:%s] %s", event.RequestID, event.DatabaseName, event.Command))
+				logger.Info(fmt.Sprintf("[MongoDB][RequestID:%d][Database:%s]\n%s", event.RequestID, event.DatabaseName, event.Command))
 			},
 			Succeeded: func(ctx context.Context, event *event.CommandSucceededEvent) {
-				logger.Info(fmt.Sprintf("[MongoDB][RequestID:%d] [%s] %s", event.RequestID, event.Duration.String(), event.Reply))
+				logger.Info(fmt.Sprintf("[MongoDB][RequestID:%d][Timer:%s]", event.RequestID, event.Duration.String()),
+					zap.Int64("RequestId", event.RequestID),
+					zap.String("Database", event.DatabaseName),
+					zap.String("Statement", event.CommandName),
+					zap.String("Timer", event.Duration.String()),
+				)
 			},
 			Failed: func(ctx context.Context, event *event.CommandFailedEvent) {
-				logger.Error(fmt.Sprintf("[MongoDB][RequestID:%d] [%s] %s", event.RequestID, event.Duration.String(), event.Failure))
+				logger.Error(fmt.Sprintf("[MongoDB][RequestID:%d][Timer:%s]\n%s", event.RequestID, event.Duration.String(), event.Failure))
 			},
 		}
 	}
