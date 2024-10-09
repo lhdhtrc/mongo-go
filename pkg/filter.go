@@ -3,6 +3,7 @@ package mongo
 import (
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo/options"
+	"time"
 )
 
 func WithPagingFilter(page, size uint64, option *options.FindOptions) {
@@ -19,13 +20,15 @@ func WithPagingFilter(page, size uint64, option *options.FindOptions) {
 	option.SetSkip(int64((page - 1) * size))
 }
 
-func WithTimerFilter(start, end string, option bson.D) {
+func WithTimerFilter(start, end string, option *bson.D) {
 	if len(start) != 0 && len(end) != 0 {
-		option = append(option, bson.E{
+		startTime, _ := time.Parse(time.DateTime, start)
+		endTime, _ := time.Parse(time.DateTime, end)
+		*option = append(*option, bson.E{
 			Key: "created_at",
 			Value: bson.D{
-				{"$gte", start},
-				{"$lte", end},
+				{"$gte", startTime},
+				{"$lte", endTime},
 			},
 		})
 	}
