@@ -7,12 +7,12 @@ import (
 
 func (table *TableEntity) BeforeInset() {
 	table.ID = primitive.NewObjectID()
-	timer := time.Now().UTC()
+	timer := time.Now().UTC().UnixMilli()
 	table.CreatedAt = timer
 	table.UpdatedAt = timer
 	table.DeletedAt = nil
 }
 
 func (table *TableEntity) BeforeUpdate() {
-	table.UpdatedAt = time.Now().UTC()
+	table.UpdatedAt = time.Now().UTC().UnixMilli()
 }

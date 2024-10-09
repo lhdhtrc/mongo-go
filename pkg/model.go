@@ -2,7 +2,6 @@ package mongo
 
 import (
 	"go.mongodb.org/mongo-driver/bson/primitive"
-	"time"
 )
 
 type TLSEntity struct {
@@ -31,7 +30,7 @@ type ConfigEntity struct {
 
 type TableEntity struct {
 	ID        primitive.ObjectID `json:"id" bson:"_id"`
-	CreatedAt time.Time          `json:"created_at" bson:"created_at"`
-	UpdatedAt time.Time          `json:"updated_at" bson:"updated_at"`
-	DeletedAt *time.Time         `json:"deleted_at" bson:"deleted_at,omitempty"`
+	CreatedAt int64              `json:"created_at" bson:"created_at"`
+	UpdatedAt int64              `json:"updated_at" bson:"updated_at"`
+	DeletedAt *int64             `json:"deleted_at" bson:"deleted_at,omitempty"`
 }

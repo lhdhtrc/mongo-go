@@ -21,7 +21,7 @@ func DeleteMany(ctx context.Context, collection *mongo.Collection, ids []string)
 }
 
 func SoftDelete(ctx context.Context, collection *mongo.Collection, id primitive.ObjectID) {
-	timer := time.Now().UTC()
+	timer := time.Now().UTC().UnixMilli()
 	_, _ = collection.UpdateOne(ctx, bson.D{
 		{"_id", id},
 	}, bson.D{
@@ -33,7 +33,7 @@ func SoftDelete(ctx context.Context, collection *mongo.Collection, id primitive.
 }
 
 func SoftDeleteMany(ctx context.Context, collection *mongo.Collection, ids []string) {
-	timer := time.Now().UTC()
+	timer := time.Now().UTC().UnixMilli()
 	_, _ = collection.UpdateMany(ctx, bson.D{
 		{"_id", bson.E{Key: "$in", Value: StrIdToObjectId(ids)}},
 	}, bson.D{
