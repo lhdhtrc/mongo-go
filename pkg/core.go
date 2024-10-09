@@ -68,7 +68,11 @@ func Install(logger *zap.Logger, config *ConfigEntity) *mongo.Database {
 	if config.LoggerEnable {
 		clientOptions.Monitor = &event.CommandMonitor{
 			Started: func(ctx context.Context, event *event.CommandStartedEvent) {
-				logger.Info(fmt.Sprintf("[MongoDB][RequestID:%d][Database:%s]\n%s", event.RequestID, event.DatabaseName, event.Command))
+				logger.Info(fmt.Sprintf("[MongoDB][RequestID:%d][Database:%s]\n%s", event.RequestID, event.DatabaseName, event.Command),
+					zap.Int64("RequestId", event.RequestID),
+					zap.String("Database", event.DatabaseName),
+					zap.String("Statement", event.Command.String()),
+				)
 			},
 			Succeeded: func(ctx context.Context, event *event.CommandSucceededEvent) {
 				logger.Info(fmt.Sprintf("[MongoDB][RequestID:%d][Timer:%s]", event.RequestID, event.Duration.String()),
