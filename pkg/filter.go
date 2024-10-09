@@ -10,12 +10,12 @@ func WithPagingFilter(page, size uint64, option *options.FindOptions) {
 		page = 1
 	}
 	if size == 0 {
-		size = 2
+		size = 5
 	}
 	if size > 100 {
 		size = 100
 	}
-	option.SetLimit(int64(page))
+	option.SetLimit(int64(size))
 	option.SetSkip(int64((page - 1) * size))
 }
 
