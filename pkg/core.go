@@ -14,7 +14,7 @@ import (
 	"time"
 )
 
-func Install(logger *zap.Logger, remote bool, config *ConfigEntity) (*mongo.Database, error) {
+func Install(remote bool, logger *zap.Logger, config *ConfigEntity) (*mongo.Database, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
