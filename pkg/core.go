@@ -73,7 +73,6 @@ func Install(logger *zap.Logger, config *ConfigEntity) *mongo.Database {
 					zap.String("Database", event.DatabaseName),
 					zap.String("Statement", event.Command.String()),
 				)
-				fmt.Println(event)
 			},
 			Succeeded: func(ctx context.Context, event *event.CommandSucceededEvent) {
 				logger.Info(fmt.Sprintf("[MongoDB][RequestID:%d][Timer:%s]", event.RequestID, event.Duration.String()),
@@ -82,11 +81,9 @@ func Install(logger *zap.Logger, config *ConfigEntity) *mongo.Database {
 					zap.String("Statement", event.CommandName),
 					zap.String("Timer", event.Duration.String()),
 				)
-				fmt.Println(event)
 			},
 			Failed: func(ctx context.Context, event *event.CommandFailedEvent) {
 				logger.Error(fmt.Sprintf("[MongoDB][RequestID:%d][Timer:%s]\n%s", event.RequestID, event.Duration.String(), event.Failure))
-				fmt.Println(event)
 			},
 		}
 	}
