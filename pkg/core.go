@@ -14,7 +14,7 @@ import (
 	"time"
 )
 
-func Install(logger *zap.Logger, config *ConfigEntity) (*mongo.Database, error) {
+func Install(logger *zap.Logger, remote bool, config *ConfigEntity) (*mongo.Database, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
@@ -61,41 +61,28 @@ func Install(logger *zap.Logger, config *ConfigEntity) (*mongo.Database, error) 
 	clientOptions.SetMaxConnIdleTime(time.Second * time.Duration(config.ConnMaxLifeTime))
 
 	if config.LoggerEnable {
-		loggerMap := make(map[int64]*LoggerEventEntity)
+		var fields []zap.Field
+		var statement string
 		clientOptions.Monitor = &event.CommandMonitor{
 			Started: func(ctx context.Context, event *event.CommandStartedEvent) {
-				loggerMap[event.RequestID] = &LoggerEventEntity{
-					Database:  event.DatabaseName,
-					Statement: event.Command.String(),
+				statement = event.Command.String()
+				if remote {
+					fields = append(fields, zap.String("Type", "Mongo"), zap.String("Database", event.DatabaseName), zap.String("Statement", statement))
 				}
 			},
 			Succeeded: func(ctx context.Context, event *event.CommandSucceededEvent) {
-				if e, ok := loggerMap[event.RequestID]; ok {
-					e.Timer = event.Duration.String()
-					e.Result = "success"
-					logger.Info(fmt.Sprintf("[Mongo:%s][RequestID:%d][Timer:%s]\n%s", event.DatabaseName, event.RequestID, event.Duration.String(), e.Statement),
-						zap.String("Database", e.Database),
-						zap.String("Statement", e.Statement),
-						zap.String("Result", e.Result),
-						zap.String("Timer", e.Timer),
-						zap.String("Type", "Mongo"),
-					)
+				if remote {
+					fields = append(fields, zap.String("Result", "success"), zap.String("Timer", event.Duration.String()))
 				}
-				delete(loggerMap, event.RequestID)
+				logger.Info(fmt.Sprintf("[Mongo:%s][RequestID:%d][Timer:%s]\n%s", event.DatabaseName, event.RequestID, event.Duration.String(), statement), fields...)
+				fields = []zap.Field{}
 			},
 			Failed: func(ctx context.Context, event *event.CommandFailedEvent) {
-				if e, ok := loggerMap[event.RequestID]; ok {
-					e.Timer = event.Duration.String()
-					e.Result = event.Failure
-					logger.Error(fmt.Sprintf("[Mongo:%s][RequestID:%d][Timer:%s]\n%s", event.DatabaseName, event.RequestID, event.Duration.String(), e.Statement),
-						zap.String("Database", e.Database),
-						zap.String("Statement", e.Statement),
-						zap.String("Result", e.Result),
-						zap.String("Timer", e.Timer),
-						zap.String("Type", "Mongo"),
-					)
+				if remote {
+					fields = append(fields, zap.String("Result", event.Failure), zap.String("Timer", event.Duration.String()))
 				}
-				delete(loggerMap, event.RequestID)
+				logger.Error(fmt.Sprintf("[Mongo:%s][RequestID:%d][Timer:%s]\n%s", event.DatabaseName, event.RequestID, event.Duration.String(), event.Failure), fields...)
+				fields = []zap.Field{}
 			},
 		}
 	}
