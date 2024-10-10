@@ -66,24 +66,45 @@ func Install(logger *zap.Logger, config *ConfigEntity) *mongo.Database {
 	clientOptions.SetMaxConnIdleTime(time.Second * time.Duration(config.ConnMaxLifeTime))
 
 	if config.LoggerEnable {
+		loggerMap := make(map[int64]*LoggerEventEntity)
 		clientOptions.Monitor = &event.CommandMonitor{
 			Started: func(ctx context.Context, event *event.CommandStartedEvent) {
-				logger.Info(fmt.Sprintf("[MongoDB][RequestID:%d][Database:%s]\n%s", event.RequestID, event.DatabaseName, event.Command),
-					zap.Int64("RequestId", event.RequestID),
-					zap.String("Database", event.DatabaseName),
-					zap.String("Statement", event.Command.String()),
-				)
+				loggerMap[event.RequestID] = &LoggerEventEntity{
+					Database:  event.DatabaseName,
+					Statement: event.Command.String(),
+				}
 			},
 			Succeeded: func(ctx context.Context, event *event.CommandSucceededEvent) {
-				logger.Info(fmt.Sprintf("[MongoDB][RequestID:%d][Timer:%s]", event.RequestID, event.Duration.String()),
-					zap.Int64("RequestId", event.RequestID),
-					zap.String("Database", event.DatabaseName),
-					zap.String("Statement", event.CommandName),
-					zap.String("Timer", event.Duration.String()),
-				)
+				fmt.Println(len(loggerMap))
+				if e, ok := loggerMap[event.RequestID]; ok {
+					e.Timer = event.Duration.String()
+					e.Result = "success"
+					logger.Info(fmt.Sprintf("[Mongo:%s][RequestID:%d][Timer:%s]\n%s\n", event.DatabaseName, event.RequestID, event.Duration.String(), e.Statement),
+						zap.String("Database", e.Database),
+						zap.String("Statement", e.Statement),
+						zap.String("Result", e.Result),
+						zap.String("Timer", e.Timer),
+						zap.String("Type", "Mongo"),
+					)
+				}
+				delete(loggerMap, event.RequestID)
+				fmt.Println(len(loggerMap))
 			},
 			Failed: func(ctx context.Context, event *event.CommandFailedEvent) {
-				logger.Error(fmt.Sprintf("[MongoDB][RequestID:%d][Timer:%s]\n%s", event.RequestID, event.Duration.String(), event.Failure))
+				fmt.Println(len(loggerMap))
+				if e, ok := loggerMap[event.RequestID]; ok {
+					e.Timer = event.Duration.String()
+					e.Result = event.Failure
+					logger.Error(fmt.Sprintf("[Mongo:%s][RequestID:%d][Timer:%s]\n%s\n", event.DatabaseName, event.RequestID, event.Duration.String(), e.Statement),
+						zap.String("Database", e.Database),
+						zap.String("Statement", e.Statement),
+						zap.String("Result", e.Result),
+						zap.String("Timer", e.Timer),
+						zap.String("Type", "Mongo"),
+					)
+				}
+				delete(loggerMap, event.RequestID)
+				fmt.Println(len(loggerMap))
 			},
 		}
 	}
