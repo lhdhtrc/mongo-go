@@ -75,11 +75,10 @@ func Install(logger *zap.Logger, config *ConfigEntity) *mongo.Database {
 				}
 			},
 			Succeeded: func(ctx context.Context, event *event.CommandSucceededEvent) {
-				fmt.Println(len(loggerMap))
 				if e, ok := loggerMap[event.RequestID]; ok {
 					e.Timer = event.Duration.String()
 					e.Result = "success"
-					logger.Info(fmt.Sprintf("[Mongo:%s][RequestID:%d][Timer:%s]\n%s\n", event.DatabaseName, event.RequestID, event.Duration.String(), e.Statement),
+					logger.Info(fmt.Sprintf("[Mongo:%s][RequestID:%d][Timer:%s]\n%s", event.DatabaseName, event.RequestID, event.Duration.String(), e.Statement),
 						zap.String("Database", e.Database),
 						zap.String("Statement", e.Statement),
 						zap.String("Result", e.Result),
@@ -88,14 +87,12 @@ func Install(logger *zap.Logger, config *ConfigEntity) *mongo.Database {
 					)
 				}
 				delete(loggerMap, event.RequestID)
-				fmt.Println(len(loggerMap))
 			},
 			Failed: func(ctx context.Context, event *event.CommandFailedEvent) {
-				fmt.Println(len(loggerMap))
 				if e, ok := loggerMap[event.RequestID]; ok {
 					e.Timer = event.Duration.String()
 					e.Result = event.Failure
-					logger.Error(fmt.Sprintf("[Mongo:%s][RequestID:%d][Timer:%s]\n%s\n", event.DatabaseName, event.RequestID, event.Duration.String(), e.Statement),
+					logger.Error(fmt.Sprintf("[Mongo:%s][RequestID:%d][Timer:%s]\n%s", event.DatabaseName, event.RequestID, event.Duration.String(), e.Statement),
 						zap.String("Database", e.Database),
 						zap.String("Statement", e.Statement),
 						zap.String("Result", e.Result),
@@ -104,7 +101,6 @@ func Install(logger *zap.Logger, config *ConfigEntity) *mongo.Database {
 					)
 				}
 				delete(loggerMap, event.RequestID)
-				fmt.Println(len(loggerMap))
 			},
 		}
 	}
