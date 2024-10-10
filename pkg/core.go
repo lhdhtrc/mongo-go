@@ -14,10 +14,7 @@ import (
 	"time"
 )
 
-func Install(logger *zap.Logger, config *ConfigEntity) *mongo.Database {
-	logPrefix := "install mongo"
-	logger.Info(fmt.Sprintf("%s %s", logPrefix, "start ->"))
-
+func Install(logger *zap.Logger, config *ConfigEntity) (*mongo.Database, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
@@ -33,15 +30,13 @@ func Install(logger *zap.Logger, config *ConfigEntity) *mongo.Database {
 		certPool := x509.NewCertPool()
 		CAFile, CAErr := os.ReadFile(config.Tls.CaCert)
 		if CAErr != nil {
-			logger.Error(fmt.Sprintf("%s read %s error: %s", logPrefix, config.Tls.CaCert, CAErr.Error()))
-			return nil
+			return nil, CAErr
 		}
 		certPool.AppendCertsFromPEM(CAFile)
 
 		clientCert, clientCertErr := tls.LoadX509KeyPair(config.Tls.ClientCert, config.Tls.ClientCertKey)
 		if clientCertErr != nil {
-			logger.Error(fmt.Sprintf("%s tls.LoadX509KeyPair err: %v", logPrefix, clientCertErr))
-			return nil
+			return nil, clientCertErr
 		}
 
 		tlsConfig := tls.Config{
@@ -107,18 +102,13 @@ func Install(logger *zap.Logger, config *ConfigEntity) *mongo.Database {
 
 	client, cErr := mongo.Connect(ctx, &clientOptions)
 	if cErr != nil {
-		logger.Error(fmt.Sprintf("%s mongo client connect: %v", logPrefix, cErr))
-		return nil
+		return nil, cErr
 	}
 
 	if err := client.Ping(ctx, readpref.Primary()); err != nil {
-		logger.Error(fmt.Sprintf("%s mongo client ping: %v", logPrefix, err))
-		return nil
+		return nil, err
 	}
 
 	db := client.Database(config.Database)
-
-	logger.Info(fmt.Sprintf("%s %s", logPrefix, "success ->"))
-
-	return db
+	return db, nil
 }
