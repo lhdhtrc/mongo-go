@@ -9,13 +9,10 @@ import (
 
 // Colors
 const (
-	Reset       = "\033[0m"
-	Green       = "\033[32m"
-	Yellow      = "\033[33m"
-	Magenta     = "\033[35m"
-	BlueBold    = "\033[34;1m"
-	MagentaBold = "\033[35;1m"
-	RedBold     = "\033[31;1m"
+	Reset    = "\033[0m"
+	Yellow   = "\033[33m"
+	BlueBold = "\033[34;1m"
+	RedBold  = "\033[31;1m"
 )
 
 // LogLevel log level
@@ -50,21 +47,21 @@ type Config struct {
 
 // Interface logger interface
 type Interface interface {
-	Trace(ctx context.Context, elapsed time.Duration, smt string, err string)
+	Trace(ctx context.Context, id int64, elapsed time.Duration, smt string, err string)
 }
 
 // New initialize logger
 func New(writer Writer, config Config, handle func(b []byte)) Interface {
 	var (
-		traceStr     = "%s\n[%.3fms] [rows:%v] %s"
-		traceWarnStr = "%s %s\n[%.3fms] [rows:%v] %s"
-		traceErrStr  = "%s %s\n[%.3fms] [rows:%v] %s"
+		traceStr     = "[RequestId:%d] [Timer:%.3fms]\n%s"
+		traceWarnStr = "[RequestId:%d] [Timer:%.3fms] %s\n%s"
+		traceErrStr  = "[RequestId:%d] [Timer:%.3fms] %s\n%s"
 	)
 
 	if config.Colorful {
-		traceStr = Green + "%s\n" + Reset + Yellow + "[%.3fms] " + BlueBold + "[rows:%v]" + Reset + " %s"
-		traceWarnStr = Green + "%s " + Yellow + "%s\n" + Reset + RedBold + "[%.3fms] " + Yellow + "[rows:%v]" + Magenta + " %s" + Reset
-		traceErrStr = RedBold + "%s " + MagentaBold + "%s\n" + Reset + Yellow + "[%.3fms] " + BlueBold + "[rows:%v]" + Reset + " %s"
+		traceStr = BlueBold + "[RequestId:%d]" + Yellow + " [%.3fms]\n" + Reset + "%s"
+		traceWarnStr = BlueBold + "[RequestId:%d]" + Yellow + " [%.3fms] " + Yellow + "%s\n" + Reset + "%s" + Reset
+		traceErrStr = BlueBold + "[RequestId:%d]" + Yellow + "[%.3fms] " + RedBold + "%s\n" + Reset + " %s"
 	}
 
 	return &logger{
@@ -86,15 +83,14 @@ type logger struct {
 }
 
 // Trace print sql message
-func (l *logger) Trace(_ context.Context, elapsed time.Duration, smt string, err string) {
+func (l *logger) Trace(_ context.Context, id int64, elapsed time.Duration, smt string, err string) {
 	if l.LogLevel <= Silent {
 		return
 	}
 
 	switch {
 	case len(err) != 0 && l.LogLevel >= Error:
-		file := FileWithLineNum()
-		l.Printf(l.traceErrStr, file, err, float64(elapsed.Nanoseconds())/1e6, "-", smt)
+		l.Printf(l.traceErrStr, id, float64(elapsed.Nanoseconds())/1e6, err, smt)
 		if l.handle != nil {
 			logMap := make(map[string]interface{})
 			logMap["Statement"] = smt
@@ -102,14 +98,13 @@ func (l *logger) Trace(_ context.Context, elapsed time.Duration, smt string, err
 			logMap["Level"] = "error"
 			logMap["Timer"] = elapsed.String()
 			logMap["Type"] = Prefix
-			logMap["Path"] = file
+			logMap["Path"] = ""
 			b, _ := json.Marshal(logMap)
 			l.handle(b)
 		}
 	case elapsed > l.SlowThreshold && l.SlowThreshold != 0 && l.LogLevel >= Warn:
-		file := FileWithLineNum()
 		slowLog := fmt.Sprintf("SLOW SQL >= %v", l.SlowThreshold)
-		l.Printf(l.traceWarnStr, file, slowLog, float64(elapsed.Nanoseconds())/1e6, "-", smt)
+		l.Printf(l.traceWarnStr, id, float64(elapsed.Nanoseconds())/1e6, slowLog, smt)
 		if l.handle != nil {
 			logMap := make(map[string]interface{})
 			logMap["Statement"] = smt
@@ -117,13 +112,12 @@ func (l *logger) Trace(_ context.Context, elapsed time.Duration, smt string, err
 			logMap["Level"] = "warning"
 			logMap["Timer"] = elapsed.String()
 			logMap["Type"] = Prefix
-			logMap["Path"] = file
+			logMap["Path"] = ""
 			b, _ := json.Marshal(logMap)
 			l.handle(b)
 		}
 	case l.LogLevel == Info:
-		file := FileWithLineNum()
-		l.Printf(l.traceStr, file, float64(elapsed.Nanoseconds())/1e6, "-", smt)
+		l.Printf(l.traceStr, id, float64(elapsed.Nanoseconds())/1e6, smt)
 		if l.handle != nil {
 			logMap := make(map[string]interface{})
 			logMap["Statement"] = smt
@@ -131,7 +125,7 @@ func (l *logger) Trace(_ context.Context, elapsed time.Duration, smt string, err
 			logMap["Level"] = "info"
 			logMap["Timer"] = elapsed.String()
 			logMap["Type"] = Prefix
-			logMap["Path"] = file
+			logMap["Path"] = ""
 			b, _ := json.Marshal(logMap)
 			l.handle(b)
 		}

@@ -13,7 +13,6 @@ import (
 	"io"
 	"log"
 	"os"
-	"strings"
 	"time"
 )
 
@@ -80,17 +79,13 @@ func Install(config *ConfigEntity) (*mongo.Database, error) {
 		var statement string
 		clientOptions.Monitor = &event.CommandMonitor{
 			Started: func(ctx context.Context, event *event.CommandStartedEvent) {
-				var smt strings.Builder
-				smt.WriteString(fmt.Sprintf("[Database:%s]", event.DatabaseName))
-				smt.WriteString(fmt.Sprintf("[RequestId:%d]\n", event.RequestID))
-				smt.WriteString(event.Command.String())
-				statement = smt.String()
+				statement = event.Command.String()
 			},
 			Succeeded: func(ctx context.Context, event *event.CommandSucceededEvent) {
-				loger.Trace(ctx, event.Duration, statement, "")
+				loger.Trace(ctx, event.RequestID, event.Duration, statement, "")
 			},
 			Failed: func(ctx context.Context, event *event.CommandFailedEvent) {
-				loger.Trace(ctx, event.Duration, statement, event.Failure)
+				loger.Trace(ctx, event.RequestID, event.Duration, statement, event.Failure)
 			},
 		}
 	}
