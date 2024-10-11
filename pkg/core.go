@@ -5,16 +5,18 @@ import (
 	"crypto/tls"
 	"crypto/x509"
 	"fmt"
+	"github.com/lhdhtrc/mongo-go/pkg/internal"
 	"go.mongodb.org/mongo-driver/event"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 	"go.mongodb.org/mongo-driver/mongo/readpref"
-	"go.uber.org/zap"
+	"log"
 	"os"
+	"strings"
 	"time"
 )
 
-func Install(remote bool, logger *zap.Logger, config *ConfigEntity) (*mongo.Database, error) {
+func Install(remote bool, config *ConfigEntity) (*mongo.Database, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
@@ -61,28 +63,26 @@ func Install(remote bool, logger *zap.Logger, config *ConfigEntity) (*mongo.Data
 	clientOptions.SetMaxConnIdleTime(time.Second * time.Duration(config.ConnMaxLifeTime))
 
 	if config.LoggerEnable {
-		var fields []zap.Field
+		loger := internal.New(log.New(os.Stdout, "\r\n", log.LstdFlags), internal.Config{
+			SlowThreshold: 200 * time.Millisecond,
+			LogLevel:      internal.Info,
+			Colorful:      true,
+		})
+
 		var statement string
 		clientOptions.Monitor = &event.CommandMonitor{
 			Started: func(ctx context.Context, event *event.CommandStartedEvent) {
-				statement = event.Command.String()
-				if remote {
-					fields = append(fields, zap.String("Type", "Mongo"), zap.String("Database", event.DatabaseName), zap.String("Statement", statement))
-				}
+				var smt strings.Builder
+				smt.WriteString(fmt.Sprintf("[Database:%s]", event.DatabaseName))
+				smt.WriteString(fmt.Sprintf("[RequestId:%d]\n", event.RequestID))
+				smt.WriteString(event.Command.String())
+				statement = smt.String()
 			},
 			Succeeded: func(ctx context.Context, event *event.CommandSucceededEvent) {
-				if remote {
-					fields = append(fields, zap.String("Result", "success"), zap.String("Timer", event.Duration.String()))
-				}
-				logger.Info(fmt.Sprintf("[Mongo:%s][RequestID:%d][Timer:%s]\n%s", event.DatabaseName, event.RequestID, event.Duration.String(), statement), fields...)
-				fields = []zap.Field{}
+				loger.Trace(ctx, event.Duration, statement, "")
 			},
 			Failed: func(ctx context.Context, event *event.CommandFailedEvent) {
-				if remote {
-					fields = append(fields, zap.String("Result", event.Failure), zap.String("Timer", event.Duration.String()))
-				}
-				logger.Error(fmt.Sprintf("[Mongo:%s][RequestID:%d][Timer:%s]\n%s", event.DatabaseName, event.RequestID, event.Duration.String(), event.Failure), fields...)
-				fields = []zap.Field{}
+				loger.Trace(ctx, event.Duration, statement, event.Failure)
 			},
 		}
 	}
