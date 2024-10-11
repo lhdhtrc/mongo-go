@@ -27,6 +27,9 @@ type ConfigEntity struct {
 	ConnMaxLifeTime int `json:"conn_max_life_time" bson:"conn_max_life_time" yaml:"conn_max_life_time" mapstructure:"conn_max_life_time"`
 
 	LoggerEnable bool `json:"logger_enable" bson:"logger_enable" yaml:"logger_enable" mapstructure:"logger_enable"`
+
+	loggerHandle  func(b []byte)
+	loggerConsole bool
 }
 
 type TableEntity struct {

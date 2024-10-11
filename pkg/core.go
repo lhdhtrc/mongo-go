@@ -10,6 +10,7 @@ import (
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 	"go.mongodb.org/mongo-driver/mongo/readpref"
+	"io"
 	"log"
 	"os"
 	"strings"
@@ -63,11 +64,18 @@ func Install(remote bool, config *ConfigEntity) (*mongo.Database, error) {
 	clientOptions.SetMaxConnIdleTime(time.Second * time.Duration(config.ConnMaxLifeTime))
 
 	if config.LoggerEnable {
-		loger := internal.New(log.New(os.Stdout, "\r\n", log.LstdFlags), internal.Config{
+		var writer io.Writer
+		if config.loggerConsole {
+			writer = os.Stdout
+		} else {
+			writer = &internal.CustomWriter{}
+		}
+
+		loger := internal.New(log.New(writer, "\r\n", log.LstdFlags), internal.Config{
 			SlowThreshold: 200 * time.Millisecond,
 			LogLevel:      internal.Info,
 			Colorful:      true,
-		})
+		}, config.loggerHandle)
 
 		var statement string
 		clientOptions.Monitor = &event.CommandMonitor{
@@ -98,4 +106,12 @@ func Install(remote bool, config *ConfigEntity) (*mongo.Database, error) {
 
 	db := client.Database(config.Database)
 	return db, nil
+}
+
+func (config *ConfigEntity) WithLoggerConsole(state bool) {
+	config.loggerConsole = state
+}
+
+func (config *ConfigEntity) WithLoggerHandle(handle func(b []byte)) {
+	config.loggerHandle = handle
 }
