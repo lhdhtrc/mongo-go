@@ -14,12 +14,12 @@ import (
 
 // How to define a table
 type TestEntity struct {
-    mongo.TableEntity
+    mongo.Table
 }
 
 func main() {
 	logger, _ := zap.NewProduction()
-	instance := mongo.Install(logger, &mongo.ConfigEntity{})
+	instance := mongo.New(logger, &mongo.Config{})
 }
 ```
 
