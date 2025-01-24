@@ -16,7 +16,7 @@ import (
 	"time"
 )
 
-func Install(config *ConfigEntity) (*mongo.Database, error) {
+func Install(config *Config) (*mongo.Database, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
@@ -103,10 +103,10 @@ func Install(config *ConfigEntity) (*mongo.Database, error) {
 	return db, nil
 }
 
-func (config *ConfigEntity) WithLoggerConsole(state bool) {
+func (config *Config) WithLoggerConsole(state bool) {
 	config.loggerConsole = state
 }
 
-func (config *ConfigEntity) WithLoggerHandle(handle func(b []byte)) {
+func (config *Config) WithLoggerHandle(handle func(b []byte)) {
 	config.loggerHandle = handle
 }
