@@ -32,7 +32,7 @@ type Config struct {
 	loggerConsole bool
 }
 
-type TableEntity struct {
+type Table struct {
 	ID        primitive.ObjectID `json:"id" bson:"_id"`
 	CreatedAt time.Time          `json:"created_at" bson:"created_at"`
 	UpdatedAt time.Time          `json:"updated_at" bson:"updated_at"`

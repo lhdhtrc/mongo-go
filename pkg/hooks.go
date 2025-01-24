@@ -5,7 +5,7 @@ import (
 	"time"
 )
 
-func (table *TableEntity) BeforeInset() {
+func (table *Table) BeforeInset() {
 	table.ID = primitive.NewObjectID()
 	timer := time.Now().UTC()
 	table.CreatedAt = timer
@@ -13,6 +13,6 @@ func (table *TableEntity) BeforeInset() {
 	table.DeletedAt = nil
 }
 
-func (table *TableEntity) BeforeUpdate() {
+func (table *Table) BeforeUpdate() {
 	table.UpdatedAt = time.Now().UTC()
 }
