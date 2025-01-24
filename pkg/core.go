@@ -16,7 +16,7 @@ import (
 	"time"
 )
 
-func Install(config *Config) (*mongo.Database, error) {
+func New(config *Config) (*mongo.Database, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
