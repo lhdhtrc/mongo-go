@@ -8,10 +8,12 @@ import (
 	"time"
 )
 
-func Delete(ctx context.Context, collection *mongo.Collection, id primitive.ObjectID) {
-	_, _ = collection.DeleteOne(ctx, bson.D{
-		{"_id", id},
-	})
+func Delete(ctx context.Context, collection *mongo.Collection, id string) {
+	if ObjectID, err := primitive.ObjectIDFromHex(id); err == nil {
+		_, _ = collection.DeleteOne(ctx, bson.D{
+			{"_id", ObjectID},
+		})
+	}
 }
 
 func DeleteMany(ctx context.Context, collection *mongo.Collection, ids []string) {
@@ -20,16 +22,18 @@ func DeleteMany(ctx context.Context, collection *mongo.Collection, ids []string)
 	})
 }
 
-func SoftDelete(ctx context.Context, collection *mongo.Collection, id primitive.ObjectID) {
-	timer := time.Now().UTC()
-	_, _ = collection.UpdateOne(ctx, bson.D{
-		{"_id", id},
-	}, bson.D{
-		{"$set", bson.D{
-			{"updated_at", timer},
-			{"deleted_at", timer},
-		}},
-	})
+func SoftDelete(ctx context.Context, collection *mongo.Collection, id string) {
+	if ObjectID, err := primitive.ObjectIDFromHex(id); err == nil {
+		timer := time.Now().UTC()
+		_, _ = collection.UpdateOne(ctx, bson.D{
+			{"_id", ObjectID},
+		}, bson.D{
+			{"$set", bson.D{
+				{"updated_at", timer},
+				{"deleted_at", timer},
+			}},
+		})
+	}
 }
 
 func SoftDeleteMany(ctx context.Context, collection *mongo.Collection, ids []string) {
