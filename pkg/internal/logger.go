@@ -4,9 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"path/filepath"
-	"runtime"
-	"strings"
 	"time"
 )
 
@@ -16,7 +13,8 @@ const (
 	ColorYellow   = "\033[33m"
 	ColorBlueBold = "\033[34;1m"
 	ColorRedBold  = "\033[31;1m"
-	LogTypeMongo  = "mongo"
+
+	LogTypeMongo  = 5 // 定义于proto中
 	ResultSuccess = "success"
 )
 
@@ -89,53 +87,43 @@ func (l *logger) Trace(ctx context.Context, id int64, elapsed time.Duration, smt
 		return
 	}
 
-	path := l.getCallerLocation(4)
-	traceId := ctx.Value("trace-id").(string)
+	traceId, tIsOk := ctx.Value("trace-id").(string)
+	if !tIsOk {
+		traceId = "--------"
+	}
+	accountId, aIsOk := ctx.Value("account-id").(string)
+	if !aIsOk {
+		accountId = "--------"
+	}
 
 	switch {
 	case len(err) > 0 && l.LogLevel >= Error:
 		l.Printf(l.traceErrStr, id, float64(elapsed.Nanoseconds())/1e6, err, smt)
-		l.handleLog(Error, traceId, path, err, smt, elapsed)
+		l.handleLog(Error, traceId, accountId, err, smt, elapsed)
 
 	case elapsed > l.SlowThreshold && l.SlowThreshold != 0 && l.LogLevel >= Warn:
 		slowLog := fmt.Sprintf("SLOW SQL >= %v", l.SlowThreshold)
 		l.Printf(l.traceWarnStr, id, float64(elapsed.Nanoseconds())/1e6, slowLog, smt)
-		l.handleLog(Warn, traceId, path, slowLog, smt, elapsed)
+		l.handleLog(Warn, traceId, accountId, slowLog, smt, elapsed)
 
 	case l.LogLevel >= Info:
 		l.Printf(l.traceStr, id, float64(elapsed.Nanoseconds())/1e6, smt)
-		l.handleLog(Info, traceId, path, ResultSuccess, smt, elapsed)
+		l.handleLog(Info, traceId, accountId, ResultSuccess, smt, elapsed)
 	}
-}
-
-// 获取调用位置
-func (l *logger) getCallerLocation(skip int) string {
-	_, file, line, ok := runtime.Caller(skip)
-	if !ok {
-		return "unknown:0"
-	}
-
-	// 优化路径显示：去掉项目绝对路径前缀
-	if idx := strings.Index(file, "/src/"); idx != -1 {
-		file = file[idx+5:]
-	} else if idx = strings.Index(file, "/pkg/mod/"); idx != -1 {
-		file = file[idx+9:]
-	}
-
-	return fmt.Sprintf("%s:%d", filepath.Base(file), line)
 }
 
 // handleLog 统一处理日志记录
-func (l *logger) handleLog(level LogLevel, traceId, path, smt, result string, elapsed time.Duration) {
+func (l *logger) handleLog(level LogLevel, traceId, accountId, smt, result string, elapsed time.Duration) {
 	if l.handle != nil {
 		logEntry := map[string]interface{}{
 			"Statement": smt,
 			"Result":    result,
-			"Level":     level,
-			"TraceId":   traceId,
 			"Duration":  elapsed.Milliseconds(),
+			"Level":     level,
 			"Type":      LogTypeMongo,
-			"Path":      path,
+
+			"TraceId":   traceId,
+			"AccountId": accountId,
 		}
 		if b, err := json.Marshal(logEntry); err == nil {
 			l.handle(b)
