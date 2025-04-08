@@ -4,6 +4,9 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"path/filepath"
+	"runtime"
+	"strings"
 	"time"
 )
 
@@ -86,24 +89,43 @@ func (l *logger) Trace(_ context.Context, id int64, elapsed time.Duration, smt s
 		return
 	}
 
+	path := l.getCallerLocation(4)
+
 	switch {
 	case len(err) > 0 && l.LogLevel >= Error:
 		l.Printf(l.traceErrStr, id, float64(elapsed.Nanoseconds())/1e6, err, smt)
-		l.handleLog("error", err, smt, elapsed)
+		l.handleLog(Error, path, err, smt, elapsed)
 
 	case elapsed > l.SlowThreshold && l.SlowThreshold != 0 && l.LogLevel >= Warn:
 		slowLog := fmt.Sprintf("SLOW SQL >= %v", l.SlowThreshold)
 		l.Printf(l.traceWarnStr, id, float64(elapsed.Nanoseconds())/1e6, slowLog, smt)
-		l.handleLog("warning", slowLog, smt, elapsed)
+		l.handleLog(Warn, path, slowLog, smt, elapsed)
 
 	case l.LogLevel >= Info:
 		l.Printf(l.traceStr, id, float64(elapsed.Nanoseconds())/1e6, smt)
-		l.handleLog("info", ResultSuccess, smt, elapsed)
+		l.handleLog(Info, path, ResultSuccess, smt, elapsed)
 	}
 }
 
+// 获取调用位置
+func (l *logger) getCallerLocation(skip int) string {
+	_, file, line, ok := runtime.Caller(skip)
+	if !ok {
+		return "unknown:0"
+	}
+
+	// 优化路径显示：去掉项目绝对路径前缀
+	if idx := strings.Index(file, "/src/"); idx != -1 {
+		file = file[idx+5:]
+	} else if idx = strings.Index(file, "/pkg/mod/"); idx != -1 {
+		file = file[idx+9:]
+	}
+
+	return fmt.Sprintf("%s:%d", filepath.Base(file), line)
+}
+
 // handleLog 统一处理日志记录
-func (l *logger) handleLog(level, result, smt string, elapsed time.Duration) {
+func (l *logger) handleLog(level LogLevel, path, smt, result string, elapsed time.Duration) {
 	if l.handle != nil {
 		logEntry := map[string]interface{}{
 			"Statement": smt,
@@ -111,7 +133,7 @@ func (l *logger) handleLog(level, result, smt string, elapsed time.Duration) {
 			"Level":     level,
 			"Duration":  elapsed.Milliseconds(),
 			"Type":      LogTypeMongo,
-			"Path":      "",
+			"Path":      path,
 		}
 		if b, err := json.Marshal(logEntry); err == nil {
 			l.handle(b)
