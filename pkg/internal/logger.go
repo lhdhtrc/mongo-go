@@ -84,26 +84,27 @@ func New(writer Writer, config Config, handle func([]byte)) Interface {
 }
 
 // Trace 记录跟踪日志
-func (l *logger) Trace(_ context.Context, id int64, elapsed time.Duration, smt string, err string) {
+func (l *logger) Trace(ctx context.Context, id int64, elapsed time.Duration, smt string, err string) {
 	if l.LogLevel <= Silent {
 		return
 	}
 
 	path := l.getCallerLocation(4)
+	traceId := ctx.Value("trace-id").(string)
 
 	switch {
 	case len(err) > 0 && l.LogLevel >= Error:
 		l.Printf(l.traceErrStr, id, float64(elapsed.Nanoseconds())/1e6, err, smt)
-		l.handleLog(Error, path, err, smt, elapsed)
+		l.handleLog(Error, traceId, path, err, smt, elapsed)
 
 	case elapsed > l.SlowThreshold && l.SlowThreshold != 0 && l.LogLevel >= Warn:
 		slowLog := fmt.Sprintf("SLOW SQL >= %v", l.SlowThreshold)
 		l.Printf(l.traceWarnStr, id, float64(elapsed.Nanoseconds())/1e6, slowLog, smt)
-		l.handleLog(Warn, path, slowLog, smt, elapsed)
+		l.handleLog(Warn, traceId, path, slowLog, smt, elapsed)
 
 	case l.LogLevel >= Info:
 		l.Printf(l.traceStr, id, float64(elapsed.Nanoseconds())/1e6, smt)
-		l.handleLog(Info, path, ResultSuccess, smt, elapsed)
+		l.handleLog(Info, traceId, path, ResultSuccess, smt, elapsed)
 	}
 }
 
@@ -125,12 +126,13 @@ func (l *logger) getCallerLocation(skip int) string {
 }
 
 // handleLog 统一处理日志记录
-func (l *logger) handleLog(level LogLevel, path, smt, result string, elapsed time.Duration) {
+func (l *logger) handleLog(level LogLevel, traceId, path, smt, result string, elapsed time.Duration) {
 	if l.handle != nil {
 		logEntry := map[string]interface{}{
 			"Statement": smt,
 			"Result":    result,
 			"Level":     level,
+			"TraceId":   traceId,
 			"Duration":  elapsed.Milliseconds(),
 			"Type":      LogTypeMongo,
 			"Path":      path,
