@@ -100,6 +100,7 @@ func New(config *Config) (*mongo.Database, error) {
 	}
 
 	db := client.Database(config.Database)
+
 	return db, nil
 }
 
