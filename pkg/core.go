@@ -70,7 +70,7 @@ func New(config *Config) (*mongo.Database, error) {
 			writer = &internal.CustomWriter{}
 		}
 
-		loger := internal.New(log.New(writer, "\r", log.LstdFlags), internal.Config{
+		loger := internal.New(config.Database, log.New(writer, "\r", log.LstdFlags), internal.Config{
 			SlowThreshold: 200 * time.Millisecond,
 			LogLevel:      internal.Info,
 			Colorful:      true,

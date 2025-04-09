@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"google.golang.org/grpc/metadata"
 	"time"
 )
 
@@ -14,7 +15,7 @@ const (
 	ColorBlueBold = "\033[34;1m"
 	ColorRedBold  = "\033[31;1m"
 
-	LogTypeMongo  = 5 // 定义于proto中
+	LogTypeMongo  = 6 // 定义于proto中
 	ResultSuccess = "success"
 )
 
@@ -54,11 +55,12 @@ type logger struct {
 	traceStr     string
 	traceWarnStr string
 	traceErrStr  string
+	database     string
 	handle       func([]byte)
 }
 
 // New 创建并初始化一个新的日志记录器实例
-func New(writer Writer, config Config, handle func([]byte)) Interface {
+func New(database string, writer Writer, config Config, handle func([]byte)) Interface {
 	baseFormat := "[RequestId:%d] [Timer:%.3fms]%s\n%s"
 	traceStr := baseFormat
 	traceWarnStr := baseFormat
@@ -77,6 +79,7 @@ func New(writer Writer, config Config, handle func([]byte)) Interface {
 		traceStr:     traceStr,
 		traceWarnStr: traceWarnStr,
 		traceErrStr:  traceErrStr,
+		database:     database,
 		handle:       handle,
 	}
 }
@@ -89,46 +92,45 @@ func (l *logger) Trace(ctx context.Context, id int64, elapsed time.Duration, smt
 
 	path := FileWithLineNum()
 
-	traceId, tIsOk := ctx.Value("trace-id").(string)
-	if !tIsOk {
-		traceId = "--------"
-	}
-	accountId, aIsOk := ctx.Value("account-id").(string)
-	if !aIsOk {
-		accountId = "--------"
-	}
-
 	switch {
 	case len(err) > 0 && l.LogLevel >= Error:
 		l.Printf(l.traceErrStr, id, float64(elapsed.Nanoseconds())/1e6, err, smt)
-		l.handleLog(4, traceId, accountId, path, smt, err, elapsed)
+		l.handleLog(ctx, 4, path, smt, err, elapsed)
 
 	case elapsed > l.SlowThreshold && l.SlowThreshold != 0 && l.LogLevel >= Warn:
 		slowLog := fmt.Sprintf("SLOW SQL >= %v", l.SlowThreshold)
 		l.Printf(l.traceWarnStr, id, float64(elapsed.Nanoseconds())/1e6, slowLog, smt)
-		l.handleLog(3, traceId, accountId, path, smt, slowLog, elapsed)
+		l.handleLog(ctx, 3, path, smt, slowLog, elapsed)
 
 	case l.LogLevel >= Info:
 		l.Printf(l.traceStr, id, float64(elapsed.Nanoseconds())/1e6, smt)
-		l.handleLog(1, traceId, accountId, path, smt, ResultSuccess, elapsed)
+		l.handleLog(ctx, 1, path, smt, ResultSuccess, elapsed)
 	}
 }
 
 // handleLog 统一处理日志记录
-func (l *logger) handleLog(level LogLevel, traceId, accountId, path, smt, result string, elapsed time.Duration) {
+func (l *logger) handleLog(ctx context.Context, level LogLevel, path, smt, result string, elapsed time.Duration) {
 	if l.handle != nil {
-		logEntry := map[string]interface{}{
+		logMap := map[string]interface{}{
+			"Database":  l.database,
 			"Statement": smt,
 			"Result":    result,
 			"Duration":  elapsed.Milliseconds(),
 			"Level":     level,
 			"Path":      path,
 			"Type":      LogTypeMongo,
-
-			"TraceId":   traceId,
-			"AccountId": accountId,
 		}
-		if b, err := json.Marshal(logEntry); err == nil {
+		md, _ := metadata.FromIncomingContext(ctx)
+		if gd := md.Get("trace-id"); len(gd) != 0 {
+			logMap["trace_id"] = gd[0]
+		}
+		if gd := md.Get("account-id"); len(gd) != 0 {
+			logMap["account_id"] = gd[0]
+		}
+		if gd := md.Get("app-id"); len(gd) != 0 {
+			logMap["invoke_app_id"] = gd[0]
+		}
+		if b, err := json.Marshal(logMap); err == nil {
 			l.handle(b)
 		}
 	}
