@@ -49,9 +49,6 @@ func New(config *Config) (*mongo.Database, error) {
 	}
 
 	uri := fmt.Sprintf("mongodb://%s", config.Address)
-	if config.Mode { // cluster
-	} else {
-	} // stand alone
 	clientOptions.ApplyURI(uri)
 
 	clientOptions.SetBSONOptions(&options.BSONOptions{
