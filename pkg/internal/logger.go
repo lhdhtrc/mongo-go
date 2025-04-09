@@ -101,16 +101,16 @@ func (l *logger) Trace(ctx context.Context, id int64, elapsed time.Duration, smt
 	switch {
 	case len(err) > 0 && l.LogLevel >= Error:
 		l.Printf(l.traceErrStr, id, float64(elapsed.Nanoseconds())/1e6, err, smt)
-		l.handleLog(Error, traceId, accountId, path, smt, err, elapsed)
+		l.handleLog(4, traceId, accountId, path, smt, err, elapsed)
 
 	case elapsed > l.SlowThreshold && l.SlowThreshold != 0 && l.LogLevel >= Warn:
 		slowLog := fmt.Sprintf("SLOW SQL >= %v", l.SlowThreshold)
 		l.Printf(l.traceWarnStr, id, float64(elapsed.Nanoseconds())/1e6, slowLog, smt)
-		l.handleLog(Warn, traceId, accountId, path, smt, slowLog, elapsed)
+		l.handleLog(3, traceId, accountId, path, smt, slowLog, elapsed)
 
 	case l.LogLevel >= Info:
 		l.Printf(l.traceStr, id, float64(elapsed.Nanoseconds())/1e6, smt)
-		l.handleLog(Info, traceId, accountId, path, smt, ResultSuccess, elapsed)
+		l.handleLog(1, traceId, accountId, path, smt, ResultSuccess, elapsed)
 	}
 }
 
