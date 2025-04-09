@@ -22,9 +22,9 @@ func New(config *Config) (*mongo.Database, error) {
 
 	var clientOptions options.ClientOptions
 
-	if config.Account != "" && config.Password != "" {
+	if config.Username != "" && config.Password != "" {
 		clientOptions.SetAuth(options.Credential{
-			Username: config.Account,
+			Username: config.Username,
 			Password: config.Password,
 		})
 	}
@@ -62,7 +62,7 @@ func New(config *Config) (*mongo.Database, error) {
 	clientOptions.SetMaxPoolSize(uint64(config.MaxIdleConnects))
 	clientOptions.SetMaxConnIdleTime(time.Second * time.Duration(config.ConnMaxLifeTime))
 
-	if config.LoggerEnable {
+	if config.Logger {
 		var writer io.Writer
 		if config.loggerConsole {
 			writer = os.Stdout
