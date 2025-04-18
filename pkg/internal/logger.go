@@ -63,15 +63,15 @@ type logger struct {
 
 // New 创建并初始化一个新的日志记录器实例
 func New(config Config, handle func([]byte)) Interface {
-	baseFormat := "[%s] [%s] [Database:%s] [RequestId:%d] [Duration:%.3fms]%s\n%s"
+	baseFormat := "[%s] [%s] [Database:%s] [RequestId:%d] [Duration:%.3fms]%s\n%s\n"
 	traceStr := baseFormat
 	traceWarnStr := baseFormat
-	traceErrStr := "[%s] [%s] [Database:%s]  [RequestId:%d] [Duration:%.3fms] %s\n%s"
+	traceErrStr := "[%s] [%s] [Database:%s]  [RequestId:%d] [Duration:%.3fms] %s\n%s\n"
 
 	if config.Colorful {
 		colorPrefix := "[%s] [%s] " + ColorBlueBold + "[Database:%s] " + ColorBlueBold + "[RequestId:%d] " + ColorYellow
-		traceStr = colorPrefix + " [Duration:%.3fms]\n" + ColorReset + "%s\n"
-		traceWarnStr = colorPrefix + " [Duration:%.3fms] " + ColorYellow + "%s\n" + ColorReset + "%s\n"
+		traceStr = colorPrefix + "[Duration:%.3fms]\n" + ColorReset + "%s\n"
+		traceWarnStr = colorPrefix + "[Duration:%.3fms] " + ColorYellow + "%s\n" + ColorReset + "%s\n"
 		traceErrStr = colorPrefix + "[Duration:%.3fms] " + ColorRedBold + "%s\n" + ColorReset + " %s\n"
 	}
 
@@ -95,16 +95,16 @@ func (l *logger) Trace(ctx context.Context, id int64, elapsed time.Duration, smt
 
 	switch {
 	case len(err) > 0 && l.LogLevel >= Error:
-		fmt.Printf(l.traceErrStr, date, l.Database, "error", id, float64(elapsed.Nanoseconds())/1e6, err, smt)
+		fmt.Printf(l.traceErrStr, date, "error", l.Database, id, float64(elapsed.Nanoseconds())/1e6, err, smt)
 		l.handleLog(ctx, 4, path, smt, err, elapsed)
 
 	case elapsed > l.SlowThreshold && l.SlowThreshold != 0 && l.LogLevel >= Warn:
 		slowLog := fmt.Sprintf("SLOW SQL >= %v", l.SlowThreshold)
-		fmt.Printf(l.traceWarnStr, date, l.Database, "warn", id, float64(elapsed.Nanoseconds())/1e6, slowLog, smt)
+		fmt.Printf(l.traceWarnStr, date, "warn", l.Database, id, float64(elapsed.Nanoseconds())/1e6, slowLog, smt)
 		l.handleLog(ctx, 3, path, smt, slowLog, elapsed)
 
 	case l.LogLevel >= Info:
-		fmt.Printf(l.traceStr, date, l.Database, "info", id, float64(elapsed.Nanoseconds())/1e6, smt)
+		fmt.Printf(l.traceStr, date, "info", l.Database, id, float64(elapsed.Nanoseconds())/1e6, smt)
 		l.handleLog(ctx, 1, path, smt, ResultSuccess, elapsed)
 	}
 }
