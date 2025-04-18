@@ -10,8 +10,6 @@ import (
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 	"go.mongodb.org/mongo-driver/mongo/readpref"
-	"io"
-	"log"
 	"os"
 	"time"
 )
@@ -60,17 +58,12 @@ func New(config *Config) (*mongo.Database, error) {
 	clientOptions.SetMaxConnIdleTime(time.Second * time.Duration(config.ConnMaxLifeTime))
 
 	if config.Logger {
-		var writer io.Writer
-		if config.loggerConsole {
-			writer = os.Stdout
-		} else {
-			writer = &internal.CustomWriter{}
-		}
-
-		loger := internal.New(config.Database, log.New(writer, "\r", log.LstdFlags), internal.Config{
+		loger := internal.New(internal.Config{
 			SlowThreshold: 200 * time.Millisecond,
 			LogLevel:      internal.Info,
 			Colorful:      true,
+			Database:      config.Database,
+			Console:       config.loggerConsole,
 		}, config.loggerHandle)
 
 		var statement string

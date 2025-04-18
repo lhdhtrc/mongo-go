@@ -36,11 +36,14 @@ type Writer interface {
 
 // Config 包含日志记录器的配置参数
 type Config struct {
+	Console                   bool          // 控制台是否输出
 	SlowThreshold             time.Duration // 慢查询阈值
 	Colorful                  bool          // 是否启用彩色输出
 	IgnoreRecordNotFoundError bool          // 是否忽略记录未找到错误
 	ParameterizedQueries      bool          // 是否记录参数化查询
-	LogLevel                  LogLevel      // 日志记录级别
+
+	Database string   // 数据库
+	LogLevel LogLevel // 日志记录级别
 }
 
 // Interface 日志记录器接口
@@ -55,31 +58,28 @@ type logger struct {
 	traceStr     string
 	traceWarnStr string
 	traceErrStr  string
-	database     string
 	handle       func([]byte)
 }
 
 // New 创建并初始化一个新的日志记录器实例
-func New(database string, writer Writer, config Config, handle func([]byte)) Interface {
-	baseFormat := "[RequestId:%d] [Timer:%.3fms]%s\n%s"
+func New(config Config, handle func([]byte)) Interface {
+	baseFormat := "[%s] [Database:%s] [%s] [RequestId:%d] [Timer:%.3fms]%s\n%s"
 	traceStr := baseFormat
 	traceWarnStr := baseFormat
-	traceErrStr := "[RequestId:%d] [Timer:%.3fms] %s\n%s"
+	traceErrStr := "[%s] [Database:%s] [%s] [RequestId:%d] [Timer:%.3fms] %s\n%s"
 
 	if config.Colorful {
-		colorPrefix := ColorBlueBold + "[RequestId:%d]" + ColorYellow
+		colorPrefix := "[%s]" + ColorBlueBold + "[Database:%s]" + ColorBlueBold + "[%s]" + ColorBlueBold + "[RequestId:%d]" + ColorYellow
 		traceStr = colorPrefix + " [%.3fms]\n" + ColorReset + "%s\n"
 		traceWarnStr = colorPrefix + " [%.3fms] " + ColorYellow + "%s\n" + ColorReset + "%s\n"
 		traceErrStr = colorPrefix + "[%.3fms] " + ColorRedBold + "%s\n" + ColorReset + " %s\n"
 	}
 
 	return &logger{
-		Writer:       writer,
 		Config:       config,
 		traceStr:     traceStr,
 		traceWarnStr: traceWarnStr,
 		traceErrStr:  traceErrStr,
-		database:     database,
 		handle:       handle,
 	}
 }
@@ -90,20 +90,21 @@ func (l *logger) Trace(ctx context.Context, id int64, elapsed time.Duration, smt
 		return
 	}
 
+	date := time.Now().Format(time.DateTime)
 	path := FileWithLineNum()
 
 	switch {
 	case len(err) > 0 && l.LogLevel >= Error:
-		l.Printf(l.traceErrStr, id, float64(elapsed.Nanoseconds())/1e6, err, smt)
+		l.Printf(l.traceErrStr, date, l.Database, "error", id, float64(elapsed.Nanoseconds())/1e6, err, smt)
 		l.handleLog(ctx, 4, path, smt, err, elapsed)
 
 	case elapsed > l.SlowThreshold && l.SlowThreshold != 0 && l.LogLevel >= Warn:
 		slowLog := fmt.Sprintf("SLOW SQL >= %v", l.SlowThreshold)
-		l.Printf(l.traceWarnStr, id, float64(elapsed.Nanoseconds())/1e6, slowLog, smt)
+		l.Printf(l.traceWarnStr, date, l.Database, "warn", id, float64(elapsed.Nanoseconds())/1e6, slowLog, smt)
 		l.handleLog(ctx, 3, path, smt, slowLog, elapsed)
 
 	case l.LogLevel >= Info:
-		l.Printf(l.traceStr, id, float64(elapsed.Nanoseconds())/1e6, smt)
+		l.Printf(l.traceStr, date, l.Database, "info", id, float64(elapsed.Nanoseconds())/1e6, smt)
 		l.handleLog(ctx, 1, path, smt, ResultSuccess, elapsed)
 	}
 }
@@ -112,7 +113,7 @@ func (l *logger) Trace(ctx context.Context, id int64, elapsed time.Duration, smt
 func (l *logger) handleLog(ctx context.Context, level LogLevel, path, smt, result string, elapsed time.Duration) {
 	if l.handle != nil {
 		logMap := map[string]interface{}{
-			"Database":  l.database,
+			"Database":  l.Database,
 			"Statement": smt,
 			"Result":    result,
 			"Duration":  elapsed.Milliseconds(),
@@ -134,13 +135,4 @@ func (l *logger) handleLog(ctx context.Context, level LogLevel, path, smt, resul
 			l.handle(b)
 		}
 	}
-}
-
-// CustomWriter 自定义日志写入器实现
-type CustomWriter struct{}
-
-// Write 实现io.Writer接口
-func (cw *CustomWriter) Write(p []byte) (n int, err error) {
-	// 这里可以添加自定义写入逻辑
-	return len(p), nil
 }
