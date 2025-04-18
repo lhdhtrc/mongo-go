@@ -68,9 +68,9 @@ func New(database string, writer Writer, config Config, handle func([]byte)) Int
 
 	if config.Colorful {
 		colorPrefix := ColorBlueBold + "[RequestId:%d]" + ColorYellow
-		traceStr = colorPrefix + " [%.3fms]\n" + ColorReset + "%s"
-		traceWarnStr = colorPrefix + " [%.3fms] " + ColorYellow + "%s\n" + ColorReset + "%s"
-		traceErrStr = colorPrefix + "[%.3fms] " + ColorRedBold + "%s\n" + ColorReset + " %s"
+		traceStr = colorPrefix + " [%.3fms]\n" + ColorReset + "%s\n"
+		traceWarnStr = colorPrefix + " [%.3fms] " + ColorYellow + "%s\n" + ColorReset + "%s\n"
+		traceErrStr = colorPrefix + "[%.3fms] " + ColorRedBold + "%s\n" + ColorReset + " %s\n"
 	}
 
 	return &logger{
