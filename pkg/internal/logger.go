@@ -63,16 +63,16 @@ type logger struct {
 
 // New 创建并初始化一个新的日志记录器实例
 func New(config Config, handle func([]byte)) Interface {
-	baseFormat := "[%s] [Database:%s] [%s] [RequestId:%d] [Timer:%.3fms]%s\n%s"
+	baseFormat := "[%s] [%s] [Database:%s] [RequestId:%d] [Duration:%.3fms]%s\n%s"
 	traceStr := baseFormat
 	traceWarnStr := baseFormat
-	traceErrStr := "[%s] [Database:%s] [%s] [RequestId:%d] [Timer:%.3fms] %s\n%s"
+	traceErrStr := "[%s] [%s] [Database:%s]  [RequestId:%d] [Duration:%.3fms] %s\n%s"
 
 	if config.Colorful {
-		colorPrefix := "[%s] " + ColorBlueBold + "[Database:%s] " + ColorBlueBold + "[%s] " + ColorBlueBold + "[RequestId:%d] " + ColorYellow
-		traceStr = colorPrefix + " [%.3fms]\n" + ColorReset + "%s\n"
-		traceWarnStr = colorPrefix + " [%.3fms] " + ColorYellow + "%s\n" + ColorReset + "%s\n"
-		traceErrStr = colorPrefix + "[%.3fms] " + ColorRedBold + "%s\n" + ColorReset + " %s\n"
+		colorPrefix := "[%s] [%s] " + ColorBlueBold + "[Database:%s] " + ColorBlueBold + "[RequestId:%d] " + ColorYellow
+		traceStr = colorPrefix + " [Duration:%.3fms]\n" + ColorReset + "%s\n"
+		traceWarnStr = colorPrefix + " [Duration:%.3fms] " + ColorYellow + "%s\n" + ColorReset + "%s\n"
+		traceErrStr = colorPrefix + "[Duration:%.3fms] " + ColorRedBold + "%s\n" + ColorReset + " %s\n"
 	}
 
 	return &logger{
