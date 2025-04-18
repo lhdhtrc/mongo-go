@@ -69,7 +69,7 @@ func New(config Config, handle func([]byte)) Interface {
 	traceErrStr := "[%s] [Database:%s] [%s] [RequestId:%d] [Timer:%.3fms] %s\n%s"
 
 	if config.Colorful {
-		colorPrefix := "[%s]" + ColorBlueBold + "[Database:%s]" + ColorBlueBold + "[%s]" + ColorBlueBold + "[RequestId:%d]" + ColorYellow
+		colorPrefix := "[%s] " + ColorBlueBold + "[Database:%s] " + ColorBlueBold + "[%s] " + ColorBlueBold + "[RequestId:%d] " + ColorYellow
 		traceStr = colorPrefix + " [%.3fms]\n" + ColorReset + "%s\n"
 		traceWarnStr = colorPrefix + " [%.3fms] " + ColorYellow + "%s\n" + ColorReset + "%s\n"
 		traceErrStr = colorPrefix + "[%.3fms] " + ColorRedBold + "%s\n" + ColorReset + " %s\n"
