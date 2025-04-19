@@ -18,7 +18,7 @@ type Config struct {
 	Password string `json:"password" bson:"password" yaml:"password" mapstructure:"password"`
 
 	// TLS加密配置（生产环境建议启用），如果不为null则启用tls加密
-	Tls TLS `json:"tls" bson:"tls" yaml:"tls" mapstructure:"tls"`
+	Tls *TLS `json:"tls" bson:"tls" yaml:"tls" mapstructure:"tls"`
 
 	// 最大打开连接数（建议：根据负载设置，默认100），0表示无限制（不推荐生产环境使用）
 	MaxOpenConnects int `json:"max_open_connects" bson:"max_open_connects" yaml:"max_open_connects" mapstructure:"max_open_connects"`
