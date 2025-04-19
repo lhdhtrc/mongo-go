@@ -91,26 +91,25 @@ func (l *logger) Trace(ctx context.Context, id int64, elapsed time.Duration, smt
 	}
 
 	date := time.Now().Format(time.DateTime)
-	path := FileWithLineNum()
 
 	switch {
 	case len(err) > 0 && l.LogLevel >= Error:
 		fmt.Println(fmt.Sprintf(l.traceErrStr, date, "error", l.Database, id, float64(elapsed.Nanoseconds())/1e6, err, smt))
-		l.handleLog(ctx, 4, path, smt, err, elapsed)
+		l.handleLog(ctx, 4, smt, err, elapsed)
 
 	case elapsed > l.SlowThreshold && l.SlowThreshold != 0 && l.LogLevel >= Warn:
 		slowLog := fmt.Sprintf("SLOW SQL >= %v", l.SlowThreshold)
 		fmt.Println(fmt.Sprintf(l.traceWarnStr, date, "warn", l.Database, id, float64(elapsed.Nanoseconds())/1e6, slowLog, smt))
-		l.handleLog(ctx, 3, path, smt, slowLog, elapsed)
+		l.handleLog(ctx, 3, smt, slowLog, elapsed)
 
 	case l.LogLevel >= Info:
 		fmt.Println(fmt.Sprintf(l.traceStr, date, "info", l.Database, id, float64(elapsed.Nanoseconds())/1e6, smt))
-		l.handleLog(ctx, 1, path, smt, ResultSuccess, elapsed)
+		l.handleLog(ctx, 1, smt, ResultSuccess, elapsed)
 	}
 }
 
 // handleLog 统一处理日志记录
-func (l *logger) handleLog(ctx context.Context, level LogLevel, path, smt, result string, elapsed time.Duration) {
+func (l *logger) handleLog(ctx context.Context, level LogLevel, smt, result string, elapsed time.Duration) {
 	if l.handle != nil {
 		logMap := map[string]interface{}{
 			"Database":  l.Database,
@@ -118,7 +117,6 @@ func (l *logger) handleLog(ctx context.Context, level LogLevel, path, smt, resul
 			"Result":    result,
 			"Duration":  elapsed.Milliseconds(),
 			"Level":     level,
-			"Path":      path,
 			"Type":      LogTypeMongo,
 		}
 		md, _ := metadata.FromIncomingContext(ctx)
