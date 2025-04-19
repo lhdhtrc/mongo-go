@@ -94,16 +94,22 @@ func (l *logger) Trace(ctx context.Context, id int64, elapsed time.Duration, smt
 
 	switch {
 	case len(err) > 0 && l.LogLevel >= Error:
-		fmt.Println(fmt.Sprintf(l.traceErrStr, date, "error", l.Database, id, float64(elapsed.Nanoseconds())/1e6, err, smt))
+		if l.Console {
+			fmt.Println(fmt.Sprintf(l.traceErrStr, date, "error", l.Database, id, float64(elapsed.Nanoseconds())/1e6, err, smt))
+		}
 		l.handleLog(ctx, 4, smt, err, elapsed)
 
 	case elapsed > l.SlowThreshold && l.SlowThreshold != 0 && l.LogLevel >= Warn:
 		slowLog := fmt.Sprintf("SLOW SQL >= %v", l.SlowThreshold)
-		fmt.Println(fmt.Sprintf(l.traceWarnStr, date, "warn", l.Database, id, float64(elapsed.Nanoseconds())/1e6, slowLog, smt))
+		if l.Console {
+			fmt.Println(fmt.Sprintf(l.traceWarnStr, date, "warn", l.Database, id, float64(elapsed.Nanoseconds())/1e6, slowLog, smt))
+		}
 		l.handleLog(ctx, 3, smt, slowLog, elapsed)
 
 	case l.LogLevel >= Info:
-		fmt.Println(fmt.Sprintf(l.traceStr, date, "info", l.Database, id, float64(elapsed.Nanoseconds())/1e6, smt))
+		if l.Console {
+			fmt.Println(fmt.Sprintf(l.traceStr, date, "info", l.Database, id, float64(elapsed.Nanoseconds())/1e6, smt))
+		}
 		l.handleLog(ctx, 1, smt, ResultSuccess, elapsed)
 	}
 }
