@@ -121,7 +121,7 @@ func (l *logger) handleLog(ctx context.Context, level LogLevel, smt, result stri
 			"Database":  l.Database,
 			"Statement": smt,
 			"Result":    result,
-			"Duration":  elapsed.Milliseconds(),
+			"Duration":  elapsed.String(),
 			"Level":     level,
 			"Type":      LogTypeMongo,
 		}
