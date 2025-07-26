@@ -45,9 +45,9 @@ func SoftDeleteMany(ctx context.Context, collection *mongo.Collection, ids []str
 			{"$in", StrIdToObjectId(ids)},
 		}},
 	}, bson.D{
-		{"$set", bson.D{
-			{"updated_at", timer},
-			{"deleted_at", timer},
+		{"$set", bson.M{
+			"updated_at": timer,
+			"deleted_at": timer,
 		}},
 	})
 }
