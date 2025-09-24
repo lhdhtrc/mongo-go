@@ -50,7 +50,7 @@ func New(config *Config) (*mongo.Database, error) {
 	clientOptions.ApplyURI(uri)
 
 	clientOptions.SetBSONOptions(&options.BSONOptions{
-		UseLocalTimeZone: true,
+		UseLocalTimeZone: false,
 	})
 
 	clientOptions.SetMaxConnecting(uint64(config.MaxOpenConnects))
