@@ -11,6 +11,7 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/options"
 	"go.mongodb.org/mongo-driver/mongo/readpref"
 	"os"
+	"sync"
 	"time"
 )
 
@@ -66,16 +67,26 @@ func New(config *Config) (*mongo.Database, error) {
 			Console:       config.loggerConsole,
 		}, config.loggerHandle)
 
-		var statement string
+		var stmts sync.Map
 		clientOptions.Monitor = &event.CommandMonitor{
-			Started: func(ctx context.Context, event *event.CommandStartedEvent) {
-				statement = event.Command.String()
+			Started: func(ctx context.Context, e *event.CommandStartedEvent) {
+				stmts.Store(e.RequestID, e.Command.String())
 			},
-			Succeeded: func(ctx context.Context, event *event.CommandSucceededEvent) {
-				loger.Trace(ctx, event.RequestID, event.Duration, statement, "")
+			Succeeded: func(ctx context.Context, e *event.CommandSucceededEvent) {
+				var smt string
+				if v, ok := stmts.Load(e.RequestID); ok {
+					smt, _ = v.(string)
+					stmts.Delete(e.RequestID)
+				}
+				loger.Trace(ctx, e.RequestID, e.Duration, smt, "")
 			},
-			Failed: func(ctx context.Context, event *event.CommandFailedEvent) {
-				loger.Trace(ctx, event.RequestID, event.Duration, statement, event.Failure)
+			Failed: func(ctx context.Context, e *event.CommandFailedEvent) {
+				var smt string
+				if v, ok := stmts.Load(e.RequestID); ok {
+					smt, _ = v.(string)
+					stmts.Delete(e.RequestID)
+				}
+				loger.Trace(ctx, e.RequestID, e.Duration, smt, e.Failure)
 			},
 		}
 	}
