@@ -15,27 +15,27 @@ import (
 	"time"
 )
 
-func New(config *Config) (*mongo.Database, error) {
+func New(conf *Conf) (*mongo.Database, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
 	var clientOptions options.ClientOptions
 
-	if config.Username != "" && config.Password != "" {
+	if conf.Username != "" && conf.Password != "" {
 		clientOptions.SetAuth(options.Credential{
-			Username: config.Username,
-			Password: config.Password,
+			Username: conf.Username,
+			Password: conf.Password,
 		})
 	}
-	if config.Tls.CaCert != "" && config.Tls.ClientCert != "" && config.Tls.ClientCertKey != "" {
+	if conf.Tls.CaCert != "" && conf.Tls.ClientCert != "" && conf.Tls.ClientCertKey != "" {
 		certPool := x509.NewCertPool()
-		CAFile, CAErr := os.ReadFile(config.Tls.CaCert)
+		CAFile, CAErr := os.ReadFile(conf.Tls.CaCert)
 		if CAErr != nil {
 			return nil, CAErr
 		}
 		certPool.AppendCertsFromPEM(CAFile)
 
-		clientCert, clientCertErr := tls.LoadX509KeyPair(config.Tls.ClientCert, config.Tls.ClientCertKey)
+		clientCert, clientCertErr := tls.LoadX509KeyPair(conf.Tls.ClientCert, conf.Tls.ClientCertKey)
 		if clientCertErr != nil {
 			return nil, clientCertErr
 		}
@@ -47,25 +47,25 @@ func New(config *Config) (*mongo.Database, error) {
 		clientOptions.SetTLSConfig(&tlsConfig)
 	}
 
-	uri := fmt.Sprintf("mongodb://%s", config.Address)
+	uri := fmt.Sprintf("mongodb://%s", conf.Address)
 	clientOptions.ApplyURI(uri)
 
 	clientOptions.SetBSONOptions(&options.BSONOptions{
 		UseLocalTimeZone: false,
 	})
 
-	clientOptions.SetMaxConnecting(uint64(config.MaxOpenConnects))
-	clientOptions.SetMaxPoolSize(uint64(config.MaxIdleConnects))
-	clientOptions.SetMaxConnIdleTime(time.Second * time.Duration(config.ConnMaxLifeTime))
+	clientOptions.SetMaxConnecting(uint64(conf.MaxOpenConnects))
+	clientOptions.SetMaxPoolSize(uint64(conf.MaxIdleConnects))
+	clientOptions.SetMaxConnIdleTime(time.Second * time.Duration(conf.ConnMaxLifeTime))
 
-	if config.Logger {
-		loger := internal.New(internal.Config{
+	if conf.Logger {
+		loger := internal.New(internal.Conf{
 			SlowThreshold: 200 * time.Millisecond,
 			LogLevel:      internal.Info,
 			Colorful:      true,
-			Database:      config.Database,
-			Console:       config.loggerConsole,
-		}, config.loggerHandle)
+			Database:      conf.Database,
+			Console:       conf.loggerConsole,
+		}, conf.loggerHandle)
 
 		var stmts sync.Map
 		clientOptions.Monitor = &event.CommandMonitor{
@@ -100,15 +100,15 @@ func New(config *Config) (*mongo.Database, error) {
 		return nil, err
 	}
 
-	db := client.Database(config.Database)
+	db := client.Database(conf.Database)
 
 	return db, nil
 }
 
-func (config *Config) WithLoggerConsole(state bool) {
+func (config *Conf) WithLoggerConsole(state bool) {
 	config.loggerConsole = state
 }
 
-func (config *Config) WithLoggerHandle(handle func(b []byte)) {
+func (config *Conf) WithLoggerHandle(handle func(b []byte)) {
 	config.loggerHandle = handle
 }

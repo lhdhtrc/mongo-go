@@ -34,8 +34,8 @@ type Writer interface {
 	Printf(string, ...interface{})
 }
 
-// Config 包含日志记录器的配置参数
-type Config struct {
+// Conf 包含日志记录器的配置参数
+type Conf struct {
 	Console                   bool          // 控制台是否输出
 	SlowThreshold             time.Duration // 慢查询阈值
 	Colorful                  bool          // 是否启用彩色输出
@@ -54,7 +54,7 @@ type Interface interface {
 // logger 日志记录器实现
 type logger struct {
 	Writer
-	Config
+	Conf
 	traceStr     string
 	traceWarnStr string
 	traceErrStr  string
@@ -62,13 +62,13 @@ type logger struct {
 }
 
 // New 创建并初始化一个新的日志记录器实例
-func New(config Config, handle func([]byte)) Interface {
+func New(conf Conf, handle func([]byte)) Interface {
 	baseFormat := "[%s] [%s] [Database:%s] [RequestId:%d] [Duration:%.3fms]%s\n%s"
 	traceStr := baseFormat
 	traceWarnStr := baseFormat
 	traceErrStr := "[%s] [%s] [Database:%s] [RequestId:%d] [Duration:%.3fms] %s\n%s"
 
-	if config.Colorful {
+	if conf.Colorful {
 		colorPrefix := "[%s] [%s] " + ColorBlueBold + "[Database:%s] " + ColorBlueBold + "[RequestId:%d] " + ColorYellow
 		traceStr = colorPrefix + "[Duration:%.3fms]\n" + ColorReset + "%s"
 		traceWarnStr = colorPrefix + "[Duration:%.3fms] " + ColorYellow + "%s\n" + ColorReset + "%s"
@@ -76,7 +76,7 @@ func New(config Config, handle func([]byte)) Interface {
 	}
 
 	return &logger{
-		Config:       config,
+		Conf:         conf,
 		traceStr:     traceStr,
 		traceWarnStr: traceWarnStr,
 		traceErrStr:  traceErrStr,

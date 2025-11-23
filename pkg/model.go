@@ -11,7 +11,7 @@ type TLS struct {
 	ClientCertKey string `json:"client_cert_key" bson:"client_cert_key" yaml:"client_cert_key" mapstructure:"client_cert_key"`
 }
 
-type Config struct {
+type Conf struct {
 	Address  string `json:"address" yaml:"address" mapstructure:"address"`
 	Database string `json:"database" yaml:"database" mapstructure:"database"`
 	Username string `json:"username" yaml:"username" mapstructure:"username"`
