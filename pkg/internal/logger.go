@@ -17,6 +17,10 @@ const (
 
 	LogTypeMongo  = 6 // 定义于proto中
 	ResultSuccess = "success"
+
+	TraceId = "trace-id"
+	UserId  = "user-id"
+	AppId   = "app-id"
 )
 
 // LogLevel 定义日志级别类型
@@ -126,13 +130,13 @@ func (l *logger) handleLog(ctx context.Context, level LogLevel, smt, result stri
 			"Type":      LogTypeMongo,
 		}
 		md, _ := metadata.FromIncomingContext(ctx)
-		if gd := md.Get("trace-id"); len(gd) != 0 {
+		if gd := md.Get(TraceId); len(gd) != 0 {
 			logMap["trace_id"] = gd[0]
 		}
-		if gd := md.Get("account-id"); len(gd) != 0 {
-			logMap["account_id"] = gd[0]
+		if gd := md.Get(UserId); len(gd) != 0 {
+			logMap["user_id"] = gd[0]
 		}
-		if gd := md.Get("app-id"); len(gd) != 0 {
+		if gd := md.Get(AppId); len(gd) != 0 {
 			logMap["invoke_app_id"] = gd[0]
 		}
 		if b, err := json.Marshal(logMap); err == nil {
